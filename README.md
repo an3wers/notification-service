@@ -91,23 +91,6 @@ email-service-go/
 - **Message Queue**: amqp091-go
 - **Email**: gomail v2
 
-### Infrastructure
-- **PostgreSQL**: 16
-- **RabbitMQ**: 3.12
-- **Redis**: 7 (optional, для кеширования)
-
-### Tools
-- **Migration**: golang-migrate
-- **Config**: viper
-- **Logging**: zap/zerolog
-- **Validation**: go-playground/validator
-- **Testing**: testify
-
-### Monitoring (optional)
-- **Metrics**: prometheus client
-- **Tracing**: opentelemetry
-- **Profiling**: pprof
-
 ## Команды для запуска
 
 ```bash
@@ -121,26 +104,5 @@ make run
 make build
 
 # Docker
-make docker-build
 make docker-run
 ```
-
-## Преимущества Go реализации
-
-1. **Performance**: В 5-10 раз быстрее Node.js
-2. **Concurrency**: Встроенные goroutines для параллельной обработки
-3. **Memory**: Меньше потребление памяти
-4. **Deployment**: Один бинарный файл, не нужен runtime
-5. **Type Safety**: Строгая типизация на этапе компиляции
-6. **Error Handling**: Явная обработка ошибок
-7. **Standard Library**: Богатая стандартная библиотека
-
-## Ключевые отличия от Node.js версии
-
-- ✅ Нативные SQL запросы вместо Prisma ORM
-- ✅ Структурное логирование (zap)
-- ✅ Контекст для таймаутов и отмены операций
-- ✅ Goroutines для конкурентной обработки
-- ✅ Channels для коммуникации между компонентами
-- ✅ Более явная обработка ошибок
-- ✅ Compile-time проверки типов
