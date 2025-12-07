@@ -1,0 +1,28 @@
+env: "local" # local, dev, prod
+
+server_config:
+  port: 3020
+  host: "localhost"
+  read_timeout: 20 #seconds
+  write_timeout: 20 #seconds
+  shutdown_timeout: 10 #seconds
+  idle_timeout: 60 #seconds
+
+database_config:
+  ssl_mode: "disable"
+  max_open_conns: 10
+  max_idle_conns: 5
+  conn_max_lifetime: 5 #seconds
+
+storage_config:
+  provider: "local"
+  local_path: "./uploads"
+  s3_bucket: ""
+  s3_region: ""
+  s3_endpoint: ""
+  max_file_size: 62914560 # 60MB
+
+logger_config:
+  level: "info" # "debug", "info", "warn", "error", "fatal"
+  format: "json" # "json" or "console"
+  output_path: "./logs"
