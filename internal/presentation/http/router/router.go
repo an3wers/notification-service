@@ -11,8 +11,8 @@ import (
 )
 
 func NewRouter(
-	// emailHandler *handler.EmailHandler,
 	healthHandler *handlers.HealthHandler,
+	emailHandler *handlers.EmailHandler,
 	log *logger.Logger,
 ) *chi.Mux {
 	r := chi.NewRouter()
@@ -31,8 +31,8 @@ func NewRouter(
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/emails", func(r chi.Router) {
-			// r.Post("/", emailHandler.SendEmail)
-			// r.Get("/{id}", emailHandler.GetEmailStatus)
+			r.Post("/", emailHandler.SendEmail)
+			r.Get("/{id}", emailHandler.GetEmailStatus)
 		})
 	})
 

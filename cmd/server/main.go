@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/an3wers/notification-serv/internal/application/usecase"
+	"github.com/an3wers/notification-serv/internal/infrastructure/email"
 	"github.com/an3wers/notification-serv/internal/infrastructure/persistence/database"
 	"github.com/an3wers/notification-serv/internal/pkg/config"
 	"github.com/an3wers/notification-serv/internal/pkg/logger"
@@ -48,11 +50,22 @@ func main() {
 	defer db.Close()
 	logg.Info("Connected to database")
 
+	// repositories
+	emailRepo := database.NewEmailRepository(db)
+
+	// providers
+	emailProvider := email.NewSMTPProvider(cfg.SMTP)
+
+	// usecases
+	sendEmailUC := usecase.NewSendEmailUseCase(emailRepo, emailProvider, cfg.SMTP, logg)
+	getEmailStatusUC := usecase.NewGetEmailStatusUseCase(emailRepo)
+
 	// init handlers
 	healthHandler := handlers.NewHealthHandler(db.Pool)
+	emailHandler := handlers.NewEmailHandler(sendEmailUC, getEmailStatusUC, cfg.Storage, logg)
 
 	// setup chi router
-	r := router.NewRouter(healthHandler, logg)
+	r := router.NewRouter(healthHandler, emailHandler, logg)
 
 	// Create HTTP server
 	srv := &http.Server{
