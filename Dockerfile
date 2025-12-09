@@ -28,6 +28,8 @@ WORKDIR /app
 COPY --from=builder /app/notification-service .
 COPY --from=builder /app/configs ./configs
 
+# Copy env
+COPY --from=builder /app/.env .
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
