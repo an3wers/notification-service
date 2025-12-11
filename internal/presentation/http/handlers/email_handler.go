@@ -57,6 +57,7 @@ func (h *EmailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 
 	// Parse JSON from form field or directly from body
 	contentType := r.Header.Get("Content-Type")
+
 	if contentType == "application/json" {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			h.respondError(w, http.StatusBadRequest, "invalid request body", err)

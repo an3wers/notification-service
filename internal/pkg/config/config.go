@@ -39,13 +39,14 @@ type DatabaseConfig struct {
 }
 
 type SMTPConfig struct {
-	Host     string `env:"SMTP_HOST" env-default:"localhost"`
-	Port     int    `env:"SMTP_PORT" env-default:"25"`
-	Username string `env:"SMTP_USER" env-default:""`
-	Password string `env:"SMTP_PASSWORD" env-default:""`
-	From     string `env:"SMTP_FROM" env-default:""`
-	TLS      bool   `env:"SMTP_SECURE" env-default:"false"`
-	Timeout  int    `env:"SMTP_TIMEOUT" env-default:"5"`
+	Host            string `env:"SMTP_HOST" env-default:"localhost"`
+	Port            int    `env:"SMTP_PORT" env-default:"25"`
+	Username        string `env:"SMTP_USER" env-default:""`
+	Password        string `env:"SMTP_PASSWORD" env-default:""`
+	From            string `env:"SMTP_FROM" env-default:""`
+	FromDisplayName string `env:"SMTP_FROM_DISPLAY_NAME" env-default:""`
+	TLS             bool   `env:"SMTP_SECURE" env-default:"false"`
+	Timeout         int    `env:"SMTP_TIMEOUT" env-default:"30"`
 }
 
 type StorageConfig struct {

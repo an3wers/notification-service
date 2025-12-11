@@ -25,6 +25,10 @@ func NewSMTPProvider(cfg config.SMTPConfig) service.EmailProvider {
 			InsecureSkipVerify: false,
 			ServerName:         cfg.Host,
 		}
+	} else {
+		dialer.TLSConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
 	}
 
 	return &smtpProvider{
@@ -35,7 +39,8 @@ func NewSMTPProvider(cfg config.SMTPConfig) service.EmailProvider {
 
 func (p *smtpProvider) Send(ctx context.Context, email *entity.Email) (*service.SendEmailResult, error) {
 	m := gomail.NewMessage()
-	m.SetHeader("From", email.From)
+
+	m.SetAddressHeader("From", email.From, p.cfg.FromDisplayName)
 	m.SetHeader("To", email.To...)
 
 	if len(email.CC) > 0 {
