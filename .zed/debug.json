@@ -1,0 +1,9 @@
+[
+  {
+    "label": "Go App Debug",
+    "adapter": "Delve",
+    "request": "launch",
+    "mode": "debug",
+    "program": "./cmd/server/main.go"
+  }
+]

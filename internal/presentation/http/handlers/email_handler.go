@@ -46,12 +46,6 @@ func NewEmailHandler(
 func (h *EmailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Parse multipart form
-	if err := r.ParseMultipartForm(h.storageCfg.MaxFileSize); err != nil {
-		h.respondError(w, http.StatusBadRequest, "failed to parse form", err)
-		return
-	}
-
 	// Extract email data
 	var req dto.SendEmailRequest
 
@@ -64,6 +58,13 @@ func (h *EmailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
+		// Parse multipart form
+
+		if err := r.ParseMultipartForm(h.storageCfg.MaxFileSize); err != nil {
+			h.respondError(w, http.StatusBadRequest, "failed to parse form", err)
+			return
+		}
+
 		// Parse from form fields
 		req.To = r.Form["to"]
 		req.CC = r.Form["cc"]
