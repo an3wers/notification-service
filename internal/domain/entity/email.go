@@ -18,6 +18,7 @@ const (
 type Email struct {
 	ID          uuid.UUID
 	From        string
+	DisplayName string
 	To          []string
 	CC          []string
 	BCC         []string
@@ -29,15 +30,17 @@ type Email struct {
 	SentAt      *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	DeletedAt   *time.Time
 	Attachments []Attachment
 }
 
-func NewEmail(from string, to []string, subject, body string) *Email {
+func NewEmail(from string, to []string, displayName, subject, body string) *Email {
 	now := time.Now()
 	return &Email{
 		ID:          uuid.New(),
 		From:        from,
 		To:          to,
+		DisplayName: displayName,
 		CC:          []string{},
 		BCC:         []string{},
 		Subject:     subject,

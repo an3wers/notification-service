@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/an3wers/notification-serv/internal/application/dto"
@@ -49,41 +51,50 @@ func NewEmailHandler(
 func (h *EmailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// r.checkSecretKey(r)
+	isValidKey := h.checkSecretKey(r)
+
+	if !isValidKey {
+		h.respondError(w, http.StatusUnauthorized, "invalid secret key", errors.New("invalid secret key"))
+		return
+	}
 
 	// Extract email data
-	var req dto.SendEmailRequest
+	// var req dto.SendEmailRequest
+
+	// normalize request
+	var normalizedReq dto.SendEmailNormalizedRequest
 
 	// Parse JSON from form field or directly from body
 	contentType := r.Header.Get("Content-Type")
 
 	if contentType == "application/json" {
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+
+		data, err := h.normalizeRequestFromJson(r)
+		if err != nil {
 			h.respondError(w, http.StatusBadRequest, "invalid request body", err)
 			return
 		}
+
+		normalizedReq = *data
+
 	} else {
 		// Parse multipart form
-
 		if err := r.ParseMultipartForm(h.storageCfg.MaxFileSize); err != nil {
 			h.respondError(w, http.StatusBadRequest, "failed to parse form", err)
 			return
 		}
 
-		// Parse from form fields
-		req.To = r.Form["to"]
-		req.CC = r.Form["cc"]
-		req.BCC = r.Form["bcc"]
-		req.Subject = r.FormValue("subject")
-		req.Body = r.FormValue("body")
-
-		if htmlValue := r.FormValue("html"); htmlValue != "" {
-			req.HTML = &htmlValue
+		data, err := h.normalizeRequestFromFormData(r)
+		if err != nil {
+			h.respondError(w, http.StatusBadRequest, "invalid request body", err)
+			return
 		}
+
+		normalizedReq = *data
 	}
 
-	// Validate request
-	if err := h.validator.Struct(req); err != nil {
+	// Validate normalized request
+	if err := h.validator.Struct(normalizedReq); err != nil {
 		h.respondError(w, http.StatusBadRequest, "validation failed", err)
 		return
 	}
@@ -139,7 +150,7 @@ func (h *EmailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Execute use case
-	email, err := h.sendEmailUC.Execute(ctx, &req, attachments)
+	email, err := h.sendEmailUC.Execute(ctx, &normalizedReq, attachments)
 
 	if err != nil {
 		h.respondError(w, http.StatusInternalServerError, "failed to send email", err)
@@ -194,13 +205,154 @@ func (h *EmailHandler) buildEmailResponse(email *entity.Email) *dto.EmailRespons
 }
 
 func (h *EmailHandler) checkSecretKey(r *http.Request) bool {
-	return r.Header.Get("X-Secret-Key") == h.serverCfg.SecretKey
+	return r.Header.Get("ssy") == h.serverCfg.SecretKey
+}
+
+func (h *EmailHandler) normalizeRequestFromJson(r *http.Request) (*dto.SendEmailNormalizedRequest, error) {
+	var req dto.SendEmailRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, err
+	}
+
+	// Parse To field - handle semicolon-separated strings
+	to := h.parseEmailList(req.To)
+
+	// Parse CC and BCC fields - handle semicolon-separated strings
+	cc := h.parseEmailList(req.CC)
+	bcc := h.parseEmailList(req.BCC)
+
+	normalized := &dto.SendEmailNormalizedRequest{
+		To:          to,
+		From:        nil,
+		DisplayName: nil,
+		CC:          cc,
+		BCC:         bcc,
+		Subject:     nil,
+		Body:        nil,
+		HTML:        req.HTML,
+	}
+
+	if req.FromEmail != "" {
+		normalized.From = &req.FromEmail
+	}
+	if req.FromDisplayName != "" {
+		normalized.DisplayName = &req.FromDisplayName
+	}
+	if req.Subject != "" {
+		normalized.Subject = &req.Subject
+	} else if req.Title != "" {
+		normalized.Subject = &req.Title
+	}
+	if req.Body != "" {
+		normalized.Body = &req.Body
+	} else if req.Message != "" {
+		normalized.Body = &req.Message
+	}
+
+	return normalized, nil
+}
+
+func (h *EmailHandler) normalizeRequestFromFormData(r *http.Request) (*dto.SendEmailNormalizedRequest, error) {
+
+	// Helper for getting string slice (required or optional)
+	getStrings := func(key string, required bool) ([]string, error) {
+		values := r.MultipartForm.Value[key]
+		if required && (len(values) == 0 || (len(values) == 1 && values[0] == "")) {
+			return nil, errors.New("missing required field: " + key)
+		}
+		// Remove empty strings
+		filtered := make([]string, 0, len(values))
+		for _, v := range values {
+			if v != "" {
+				filtered = append(filtered, v)
+			}
+		}
+		if required && len(filtered) == 0 {
+			return nil, errors.New("missing required field: " + key)
+		}
+		return filtered, nil
+	}
+
+	getStringPtr := func(key string) *string {
+		if vals, ok := r.MultipartForm.Value[key]; ok && len(vals) > 0 && vals[0] != "" {
+			return &vals[0]
+		}
+		return nil
+	}
+
+	// "to" required
+	toRaw, err := getStrings("to", true)
+	if err != nil {
+		return nil, err
+	}
+	// Parse To field - handle semicolon-separated strings
+	to := h.parseEmailList(toRaw)
+
+	// Optional fields
+	ccRaw, _ := getStrings("cc", false)
+	cc := h.parseEmailList(ccRaw)
+	bccRaw, _ := getStrings("bcc", false)
+	bcc := h.parseEmailList(bccRaw)
+
+	from := getStringPtr("fromEmail")
+	if from == nil {
+		from = getStringPtr("from")
+	}
+	displayName := getStringPtr("fromDisplayName")
+	if displayName == nil {
+		displayName = getStringPtr("displayName")
+	}
+
+	// subject/title (prefer subject)
+	subject := getStringPtr("subject")
+	if subject == nil {
+		subject = getStringPtr("title")
+	}
+
+	// body/message (prefer body)
+	body := getStringPtr("body")
+	if body == nil {
+		body = getStringPtr("message")
+	}
+
+	html := getStringPtr("html")
+
+	return &dto.SendEmailNormalizedRequest{
+		To:          to,
+		From:        from,
+		DisplayName: displayName,
+		CC:          cc,
+		BCC:         bcc,
+		Subject:     subject,
+		Body:        body,
+		HTML:        html,
+	}, nil
 }
 
 func (h *EmailHandler) respondJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
+}
+
+func (h *EmailHandler) parseEmailList(emails []string) []string {
+	if len(emails) == 0 {
+		return emails
+	}
+
+	var result []string
+	for _, emailStr := range emails {
+		// Split by semicolon and trim whitespace
+		parts := strings.Split(emailStr, ";")
+		for _, part := range parts {
+			trimmed := strings.TrimSpace(part)
+			if trimmed != "" {
+				result = append(result, trimmed)
+			}
+		}
+	}
+	return result
 }
 
 func (h *EmailHandler) respondError(w http.ResponseWriter, status int, message string, err error) {

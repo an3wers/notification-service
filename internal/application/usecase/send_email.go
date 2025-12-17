@@ -36,12 +36,42 @@ func NewSendEmailUseCase(
 
 func (uc *SendEmailUseCase) Execute(
 	ctx context.Context,
-	req *dto.SendEmailRequest,
+	req *dto.SendEmailNormalizedRequest,
 	attachments []dto.AttachmentDTO,
 ) (*entity.Email, error) {
 
 	// Create email entity
-	email := entity.NewEmail(uc.cfg.From, req.To, req.Subject, req.Body)
+	var subject string
+
+	if req.Subject != nil {
+		subject = *req.Subject
+	} else {
+		subject = ""
+	}
+
+	var body string
+	if req.Body != nil {
+		body = *req.Body
+	} else {
+		body = ""
+	}
+
+	// uc.cfg.From
+	var from string
+	if req.From != nil {
+		from = *req.From
+	} else {
+		from = uc.cfg.From
+	}
+
+	var displayName string
+	if req.DisplayName != nil {
+		displayName = *req.DisplayName
+	} else {
+		displayName = uc.cfg.FromDisplayName
+	}
+
+	email := entity.NewEmail(from, req.To, displayName, subject, body)
 	email.CC = req.CC
 	email.BCC = req.BCC
 	email.HTML = req.HTML

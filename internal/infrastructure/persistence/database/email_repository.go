@@ -23,14 +23,15 @@ func NewEmailRepository(db *DB) repository.EmailRepository {
 func (r *emailRepository) Create(ctx context.Context, email *entity.Email) error {
 	query := `
 		INSERT INTO emails (
-			id, "from", "to", cc, bcc, subject, body, html,
+			id, "from", "display_name", "to", cc, bcc, subject, body, html,
 			status, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
 
 	_, err := r.db.Pool.Exec(ctx, query,
 		email.ID,
 		email.From,
+		email.DisplayName,
 		email.To,
 		email.CC,
 		email.BCC,
@@ -112,8 +113,8 @@ func (r *emailRepository) CreateAttachment(ctx context.Context, attachment *enti
 func (r *emailRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.Email, error) {
 	query := `
 		SELECT
-			id, "from", "to", cc, bcc, subject, body, html,
-			status, error, sent_at, created_at, updated_at
+			id, "from", "display_name", "to", cc, bcc, subject, body, html,
+			status, error, sent_at, created_at, updated_at, deleted_at
 		FROM emails
 		WHERE id = $1
 	`
@@ -122,6 +123,7 @@ func (r *emailRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.E
 	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
 		&email.ID,
 		&email.From,
+		&email.DisplayName,
 		&email.To,
 		&email.CC,
 		&email.BCC,
@@ -133,6 +135,7 @@ func (r *emailRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.E
 		&email.SentAt,
 		&email.CreatedAt,
 		&email.UpdatedAt,
+		&email.DeletedAt,
 	)
 
 	if err != nil {
