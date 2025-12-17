@@ -42,7 +42,7 @@ func NewSMTPProvider(cfg config.SMTPConfig) service.EmailProvider {
 func (p *smtpProvider) Send(ctx context.Context, email *entity.Email) (*service.SendEmailResult, error) {
 	m := gomail.NewMessage()
 
-	m.SetAddressHeader("From", email.From, p.cfg.FromDisplayName)
+	m.SetAddressHeader("From", email.From, email.DisplayName)
 	m.SetHeader("To", email.To...)
 
 	if len(email.CC) > 0 {
