@@ -62,7 +62,7 @@ func main() {
 
 	// init handlers
 	healthHandler := handlers.NewHealthHandler(db.Pool)
-	emailHandler := handlers.NewEmailHandler(sendEmailUC, getEmailStatusUC, cfg.Storage, logg)
+	emailHandler := handlers.NewEmailHandler(sendEmailUC, getEmailStatusUC, cfg.Storage, cfg.Server, logg)
 
 	// setup chi router
 	r := router.NewRouter(healthHandler, emailHandler, logg)

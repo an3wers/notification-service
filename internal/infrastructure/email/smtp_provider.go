@@ -24,7 +24,9 @@ func NewSMTPProvider(cfg config.SMTPConfig) service.EmailProvider {
 		dialer.TLSConfig = &tls.Config{
 			InsecureSkipVerify: false,
 			ServerName:         cfg.Host,
+			MinVersion:         tls.VersionTLS12,
 		}
+
 	} else {
 		dialer.TLSConfig = &tls.Config{
 			InsecureSkipVerify: true,

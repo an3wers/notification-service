@@ -24,6 +24,7 @@ type ServerConfig struct {
 	WriteTimeout    int    `yaml:"write_timeout" env:"WRITE_TIMEOUT" env-default:"20"`
 	ShutdownTimeout int    `yaml:"shutdown_timeout" env:"SHUTDOWN_TIMEOUT" env-default:"10"`
 	IdleTimeout     int    `yaml:"idle_timeout" env:"IDLE_TIMEOUT" env-default:"60"`
+	SecretKey       string `env:"SECRET_KEY" env-default:""`
 }
 
 type DatabaseConfig struct {

@@ -25,6 +25,7 @@ type EmailHandler struct {
 	getEmailStatusUC *usecase.GetEmailStatusUseCase
 	validator        *validator.Validate
 	storageCfg       config.StorageConfig
+	serverCfg        config.ServerConfig
 	logger           *logger.Logger
 }
 
@@ -32,6 +33,7 @@ func NewEmailHandler(
 	sendEmailUC *usecase.SendEmailUseCase,
 	getEmailStatusUC *usecase.GetEmailStatusUseCase,
 	storageCfg config.StorageConfig,
+	serverCfg config.ServerConfig,
 	logger *logger.Logger,
 ) *EmailHandler {
 	return &EmailHandler{
@@ -39,12 +41,15 @@ func NewEmailHandler(
 		getEmailStatusUC: getEmailStatusUC,
 		validator:        validator.New(),
 		storageCfg:       storageCfg,
+		serverCfg:        serverCfg,
 		logger:           logger,
 	}
 }
 
 func (h *EmailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	// r.checkSecretKey(r)
 
 	// Extract email data
 	var req dto.SendEmailRequest
@@ -186,6 +191,10 @@ func (h *EmailHandler) buildEmailResponse(email *entity.Email) *dto.EmailRespons
 	}
 
 	return resp
+}
+
+func (h *EmailHandler) checkSecretKey(r *http.Request) bool {
+	return r.Header.Get("X-Secret-Key") == h.serverCfg.SecretKey
 }
 
 func (h *EmailHandler) respondJSON(w http.ResponseWriter, status int, data any) {
