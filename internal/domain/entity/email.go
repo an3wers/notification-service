@@ -35,7 +35,7 @@ type Email struct {
 }
 
 func NewEmail(from string, to []string, displayName, subject, body string) *Email {
-	now := time.Now()
+	now := time.Now().UTC()
 	return &Email{
 		ID:          uuid.New(),
 		From:        from,
@@ -53,7 +53,7 @@ func NewEmail(from string, to []string, displayName, subject, body string) *Emai
 }
 
 func (e *Email) MarkAsSent() {
-	now := time.Now()
+	now := time.Now().UTC()
 	e.Status = StatusSent
 	e.SentAt = &now
 	e.UpdatedAt = now
@@ -62,10 +62,10 @@ func (e *Email) MarkAsSent() {
 func (e *Email) MarkAsFailed(errMsg string) {
 	e.Status = StatusFailed
 	e.Error = &errMsg
-	e.UpdatedAt = time.Now()
+	e.UpdatedAt = time.Now().UTC()
 }
 
 func (e *Email) MarkAsQueued() {
 	e.Status = StatusQueued
-	e.UpdatedAt = time.Now()
+	e.UpdatedAt = time.Now().UTC()
 }
